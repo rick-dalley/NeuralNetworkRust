@@ -15,13 +15,11 @@ use std::io::{self, Write};
 #[derive(Deserialize)]
 pub struct Config {
     pub data_file: String,
-    pub label_column: usize,
     pub input_nodes: usize,
     pub hidden_nodes: usize,
     pub scaling_factor: f64,
     pub epochs: usize,
     pub data_rows: usize,
-    pub batch_size: usize,
     pub output_classes: usize,
     pub learning_rate: f64,
     pub shuffle_data: bool,
@@ -41,7 +39,6 @@ pub struct Model {
     validation_split: f64,
     data_rows: usize,
     split_index: usize,
-    digits: usize,
     data_location: String,
 
     input_hidden_weights: Matrix, // Assuming Matrix<f64>
@@ -53,7 +50,6 @@ pub struct Model {
     labels: Vec<usize>,
     training_labels: Vec<usize>,
     validation_labels: Vec<usize>,
-    confidence_changes: Vec<f64>,
 }
 
 
@@ -80,12 +76,10 @@ impl Model {
             validation_split: config.validation_split,
             data_rows: config.data_rows,
             split_index: 0, // To be calculated during data processing
-            digits: config.output_classes,
             data_location: config.data_file.clone(),
             labels: vec![],
             training_labels: vec![],
             validation_labels: vec![],
-            confidence_changes: vec![],
             input_hidden_weights: Matrix::zeros(config.hidden_nodes, config.input_nodes),
             hidden_output_weights: Matrix::zeros(config.output_classes, config.hidden_nodes),
             data: Matrix::zeros(config.data_rows, config.input_nodes),
@@ -203,12 +197,10 @@ impl Model {
 
         let start_time = Instant::now(); // Capture the start time
 
-        let mut total_loss = 0.0;
-        let mut correct_predictions = 0;
-
         for epoch in 0..self.epochs {
-            total_loss = 0.0;
-            correct_predictions = 0;
+            let mut total_loss = 0.0;
+            let mut correct_predictions = 0;
+
 
             for i in 0..self.training_data.rows {
                 let input_row = self.training_data.row_slice(i).expect("Row out of bounds");
@@ -343,6 +335,7 @@ pub fn sigmoid(x: f64) -> f64 {
     1.0 / (1.0 + (-x).exp())
 }
 
+#[allow(unused)] 
 pub fn sigmoid_derivative(x: f64) -> f64 {
     let s = sigmoid(x);
     s * (1.0 - s)
