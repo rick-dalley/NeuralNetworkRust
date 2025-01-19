@@ -1,7 +1,7 @@
 // module Model
 // Richard Dalley
 
-use crate::matrix::{Matrix, VectorType, Dot, Outer};
+use crate::matrix::{Matrix, VectorType, Dot};
 use serde::Deserialize;
 use std::fs::File;
 use std::io::BufReader;
@@ -9,8 +9,8 @@ use serde_json::from_reader;
 use csv::ReaderBuilder;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
-
-
+use std::time::Instant;
+use std::io::{self, Write};
 
 #[derive(Deserialize)]
 pub struct Config {
@@ -20,7 +20,7 @@ pub struct Config {
     pub hidden_nodes: usize,
     pub scaling_factor: f64,
     pub epochs: usize,
-    pub lines_in_file: usize,
+    pub data_rows: usize,
     pub batch_size: usize,
     pub output_classes: usize,
     pub learning_rate: f64,
@@ -78,7 +78,7 @@ impl Model {
             scaling_factor: config.scaling_factor,
             shuffle_data: config.shuffle_data,
             validation_split: config.validation_split,
-            data_rows: config.lines_in_file,
+            data_rows: config.data_rows,
             split_index: 0, // To be calculated during data processing
             digits: config.output_classes,
             data_location: config.data_file.clone(),
@@ -88,11 +88,14 @@ impl Model {
             confidence_changes: vec![],
             input_hidden_weights: Matrix::zeros(config.hidden_nodes, config.input_nodes),
             hidden_output_weights: Matrix::zeros(config.output_classes, config.hidden_nodes),
-            data: Matrix::zeros(config.lines_in_file, config.input_nodes),
+            data: Matrix::zeros(config.data_rows, config.input_nodes),
             training_data: Matrix::zeros(0, config.input_nodes), // Placeholder until split
             validation_data: Matrix::zeros(0, config.input_nodes), // Placeholder until split
         };
 
+        // Calculate split index based on the number of rows and validation split
+        model.split_index = (config.data_rows as f64 * (1.0 - config.validation_split)) as usize;
+        //assign weights to start
         model.input_hidden_weights.initialize_weights(config.input_nodes);
         model.hidden_output_weights.initialize_weights(config.hidden_nodes);
 
@@ -172,10 +175,7 @@ impl Model {
 
     pub fn split_data(&mut self) {
         println!("Splitting data...");
-
-        // Calculate the split index
-        self.split_index = (self.data.rows as f64 * (1.0 - self.validation_split)).round() as usize;
-
+           
         // Split data into training and validation sets
         self.training_data = Matrix::zeros(self.split_index, self.data.cols);
         self.validation_data = Matrix::zeros(self.data.rows - self.split_index, self.data.cols);
@@ -200,6 +200,9 @@ impl Model {
     }
 
     pub fn train(&mut self, show_progress: bool) {
+
+        let start_time = Instant::now(); // Capture the start time
+
         let mut total_loss = 0.0;
         let mut correct_predictions = 0;
 
@@ -231,13 +234,21 @@ impl Model {
                 }
 
                 // Show progress
-                if show_progress && i % 1000 == 0 {
-                    print!(".");
-                    if i % 10000 == 0 {
-                        println!();
+                if i > 0 {
+                    if show_progress && i % 1000 == 0 {
+                        print!(".");
+                        io::stdout().flush().unwrap();
+                        if i % 10000 == 0 {
+                           print!(" ");
+                        }
                     }
+                } else {
+                    print!(" Training data ");
                 }
             }
+
+            //start a new line for the next epoch    
+            println!();
 
             // Metrics for the epoch
             if show_progress {
@@ -252,6 +263,13 @@ impl Model {
                 );
             }
         }
+            // Calculate and report elapsed time
+        let elapsed_time = start_time.elapsed();
+        println!(
+            "\nTraining completed in {:.2?} (hh:mm:ss.milliseconds)",
+            elapsed_time
+        );
+
     }
 
     fn forward_pass(&self, input: &Matrix) -> (Matrix, Matrix) {
@@ -318,11 +336,6 @@ impl Model {
         println!("  Input-Hidden Weights Dimensions: {}x{}", self.input_hidden_weights.rows, self.input_hidden_weights.cols);
         println!("  Hidden-Output Weights Dimensions: {}x{}", self.hidden_output_weights.rows, self.hidden_output_weights.cols);
         println!("  Data Matrix Dimensions: {}x{}", self.data.rows, self.data.cols);
-        println!("  Training Data Dimensions: {}x{}", self.training_data.rows, self.training_data.cols);
-        println!("  Validation Data Dimensions: {}x{}", self.validation_data.rows, self.validation_data.cols);
-        println!("  Labels Count: {}", self.labels.len());
-        println!("  Training Labels Count: {}", self.training_labels.len());
-        println!("  Validation Labels Count: {}", self.validation_labels.len());    
     }
 }
 
