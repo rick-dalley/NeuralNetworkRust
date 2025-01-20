@@ -1,6 +1,22 @@
 // matrix.rs
 // Richard Dalley
 
+//! # Matrix Module
+//!
+//! This module provides the implementation of the `Matrix` struct and related traits, including:
+//! - `Dot`: For performing dot products
+//! - `Outer`: For performing outer products
+//!
+//! It also defines an enum for specifying row-wise or column-wise operations
+//! - pub enum VectorType { Row, Column,}
+//! 
+//! ## Usage:
+//! To use the `Matrix` struct along with åits associated traits and operations, add the following to your code:
+//! ```rust
+//! use crate::matrix::{Matrix, Dot, Outer, VectorType};
+//! ```
+//! This will bring the `Matrix` struct as well as the `Dot` and `Outer` traits into scope, allowing you to perform matrix operations like dot products and outer products.
+
 // traits
 use std::ops::Mul;
 use std::ops::MulAssign;
