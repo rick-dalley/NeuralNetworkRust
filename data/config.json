@@ -10,5 +10,9 @@
   "output_classes": 10,
   "learning_rate": 0.3,
   "shuffle_data": true,
-  "validation_split": 0.1
+  "validation_split": 0.1,
+  "activation_functions": {
+    "hidden_layer": "sigmoid",
+    "output_layer": "sigmoid"
+  }
 }

@@ -25,8 +25,14 @@ pub struct Config {
     pub learning_rate: f64,
     pub shuffle_data: bool,
     pub validation_split: f64,
+    pub activation_functions: ActivationConfig, // Add this field
 }
 
+#[derive(Deserialize)]
+pub struct ActivationConfig {
+    pub hidden_layer: String,
+    pub output_layer: String,
+}
 // Model
 #[derive(Debug)] 
 pub struct Model {
@@ -51,6 +57,9 @@ pub struct Model {
     labels: Vec<usize>,
     training_labels: Vec<usize>,
     validation_labels: Vec<usize>,
+
+    hidden_function: ActivationFunction, // Hidden layer activation
+    output_function: ActivationFunction,
 }
 
 
@@ -85,9 +94,12 @@ impl Model {
             hidden_output_weights: Matrix::zeros(config.output_classes, config.hidden_nodes),
             data: Matrix::zeros(config.data_rows, config.input_nodes),
             training_data: Matrix::zeros(0, config.input_nodes), // Placeholder until split
-            validation_data: Matrix::zeros(0, config.input_nodes), // Placeholder until split
+            validation_data: Matrix::zeros(0, config.input_nodes),
+            hidden_function: get_activation_function(&config.activation_functions.hidden_layer, None),
+            output_function: get_activation_function(&config.activation_functions.output_layer, None),
         };
 
+    
         // Calculate split index based on the number of rows and validation split
         model.split_index = (config.data_rows as f64 * (1.0 - config.validation_split)) as usize;
         //assign weights to start
@@ -197,7 +209,9 @@ impl Model {
     pub fn train(&mut self, show_progress: bool) {
 
         let start_time = Instant::now(); // Capture the start time
-
+        
+        let (hidden_activation, output_activation) = self.resolve_activation_functions();
+        
         for epoch in 0..self.epochs {
             let mut total_loss = 0.0;
             let mut correct_predictions = 0;
@@ -213,10 +227,10 @@ impl Model {
                 target.data[self.training_labels[i]] = 0.99;
 
                 // Train the layer
-                self.train_layer(&input, &target);
+                self.train_layer(&input, &target, hidden_activation, output_activation);
 
                 // Forward pass for metrics
-                let (_, final_outputs) = self.forward_pass(&input, sigmoid, sigmoid);
+                let (_, final_outputs) = self.forward_pass(&input, hidden_activation, output_activation);
                 let loss = self.calculate_loss(&final_outputs, self.training_labels[i]);
                 total_loss += loss;
 
@@ -264,6 +278,9 @@ impl Model {
         );
 
     }
+
+
+    // forward_pass with activation functions
 fn forward_pass<F, G>(
     &self,
     input: &Matrix,
@@ -284,7 +301,9 @@ where
 
     (hidden_outputs, final_outputs)
 }
-    fn calculate_loss(&self, output: &Matrix, true_label: usize) -> f64 {
+    fn calculate_loss(
+        &self, output: &Matrix, 
+        true_label: usize) -> f64 {
         let mut loss = 0.0;
         for i in 0..self.output_nodes {
             let predicted = output.data[i];
@@ -294,9 +313,14 @@ where
         loss
     }
 
-    fn train_layer(&mut self, input: &Matrix, target: &Matrix) {
+    fn train_layer(
+        &mut self, 
+        input: &Matrix, 
+        target: &Matrix,
+        hidden_activation: fn(f64) -> f64,
+        output_activation: fn(f64) -> f64,    ) {
         // Forward pass
-        let (hidden_outputs, final_outputs) = self.forward_pass(input, sigmoid, sigmoid);
+        let (hidden_outputs, final_outputs) = self.forward_pass(input, hidden_activation, output_activation);
 
         // Calculate errors
         let output_errors = target - &final_outputs;
@@ -319,6 +343,24 @@ where
         self.input_hidden_weights += weight_delta_input;
     }
     
+    // determine the activation functions
+    fn resolve_activation_functions(&self) -> (fn(f64) -> f64, fn(f64) -> f64) {
+        let hidden_activation = match self.hidden_function {
+            ActivationFunction::Sigmoid => sigmoid,
+            ActivationFunction::ReLU => relu,
+            ActivationFunction::Tanh => tanh,
+            _ => panic!("Unsupported hidden activation function"),
+        };
+
+        let output_activation = match self.output_function {
+            ActivationFunction::Sigmoid => sigmoid,
+            ActivationFunction::Softmax => panic!("Softmax should be applied to vectors"),
+            _ => panic!("Unsupported output activation function"),
+        };
+
+        (hidden_activation, output_activation)
+    }
+
     // print the config
     pub fn print_config(&self) {
         println!("Model Configuration:");
