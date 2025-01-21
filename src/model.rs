@@ -227,10 +227,10 @@ impl Model {
                 target.data[self.training_labels[i]] = 0.99;
 
                 // Train the layer
-                self.train_layer(&input, &target, hidden_activation, output_activation);
+                self.train_layer(&input, &target, &hidden_activation,&output_activation);
 
                 // Forward pass for metrics
-                let (_, final_outputs) = self.forward_pass(&input, hidden_activation, output_activation);
+                let (_, final_outputs) = self.forward_pass(&input, &hidden_activation, &output_activation);
                 let loss = self.calculate_loss(&final_outputs, self.training_labels[i]);
                 total_loss += loss;
 
@@ -281,15 +281,12 @@ impl Model {
 
 
     // forward_pass with activation functions
-fn forward_pass<F, G>(
+fn forward_pass (
     &self,
     input: &Matrix,
-    hidden_activation: F,
-    output_activation: G,
+    hidden_activation: &Box<dyn Fn(f64) -> f64>,
+    output_activation: &Box<dyn Fn(f64) -> f64>,
 ) -> (Matrix, Matrix)
-where
-    F: Fn(f64) -> f64,
-    G: Fn(f64) -> f64,
 {
     // Hidden layer
     let hidden_inputs = self.input_hidden_weights.dot(input);
@@ -317,8 +314,9 @@ where
         &mut self, 
         input: &Matrix, 
         target: &Matrix,
-        hidden_activation: fn(f64) -> f64,
-        output_activation: fn(f64) -> f64,    ) {
+        hidden_activation: &Box<dyn Fn(f64) -> f64>,
+        output_activation: &Box<dyn Fn(f64) -> f64>,
+    ) {
         // Forward pass
         let (hidden_outputs, final_outputs) = self.forward_pass(input, hidden_activation, output_activation);
 
@@ -344,16 +342,18 @@ where
     }
     
     // determine the activation functions
-    fn resolve_activation_functions(&self) -> (fn(f64) -> f64, fn(f64) -> f64) {
-        let hidden_activation = match self.hidden_function {
-            ActivationFunction::Sigmoid => sigmoid,
-            ActivationFunction::ReLU => relu,
-            ActivationFunction::Tanh => tanh,
+    fn resolve_activation_functions(&self) -> (Box<dyn Fn(f64) -> f64>, Box<dyn Fn(f64) -> f64>) {
+        let hidden_activation: Box<dyn Fn(f64) -> f64> = match self.hidden_function {
+            ActivationFunction::Sigmoid => Box::new(sigmoid),
+            ActivationFunction::ReLU => Box::new(relu),
+            ActivationFunction::Tanh => Box::new(tanh),
+            ActivationFunction::Swish => Box::new(swish),
             _ => panic!("Unsupported hidden activation function"),
         };
 
-        let output_activation = match self.output_function {
-            ActivationFunction::Sigmoid => sigmoid,
+        let output_activation: Box<dyn Fn(f64) -> f64> = match self.output_function {
+            ActivationFunction::Sigmoid => Box::new(sigmoid),
+            ActivationFunction::Swish => Box::new(swish),
             ActivationFunction::Softmax => panic!("Softmax should be applied to vectors"),
             _ => panic!("Unsupported output activation function"),
         };

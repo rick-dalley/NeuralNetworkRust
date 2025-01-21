@@ -5,6 +5,7 @@ pub enum ActivationFunction {
     LeakyReLU(f64), // Alpha value for Leaky ReLU
     Tanh,
     Softmax, // Typically applied to vectors, not scalars
+    Swish,
 }
 
 
@@ -15,6 +16,7 @@ pub fn get_activation_function(name: &str, alpha: Option<f64>) -> ActivationFunc
         "leaky_relu" => ActivationFunction::LeakyReLU(alpha.unwrap_or(0.01)),
         "tanh" => ActivationFunction::Tanh,
         "softmax" => ActivationFunction::Softmax,
+        "swish" => ActivationFunction::Swish,
         _ => panic!("Unknown activation function: {}", name),
     }
 }
@@ -33,7 +35,9 @@ pub fn sigmoid_derivative(x: f64) -> f64 {
 
 #[allow(unused)] 
 pub fn swish(x: f64) -> f64 {
-    x * sigmoid(x)
+    // x * sigmoid(x) - this results in a failure when swish is passed as a pointer.  
+    // perhaps rust doesn't like to add a stack frame in these instances?
+     x * (1.0 / (1.0 + (-x).exp())) //inlined to get it to work
 }
 
 #[allow(unused)] 
