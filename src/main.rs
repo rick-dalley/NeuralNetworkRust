@@ -1,5 +1,6 @@
 mod model;
 pub mod matrix;
+pub mod activation_functions;
 use model::Model;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

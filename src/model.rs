@@ -2,6 +2,7 @@
 // Richard Dalley
 
 use crate::matrix::{Matrix, VectorType, Dot};
+use crate::activation_functions::*;
 use serde::Deserialize;
 use std::fs::File;
 use std::io::BufReader;
@@ -215,7 +216,7 @@ impl Model {
                 self.train_layer(&input, &target);
 
                 // Forward pass for metrics
-                let (_, final_outputs) = self.forward_pass(&input);
+                let (_, final_outputs) = self.forward_pass(&input, sigmoid, sigmoid);
                 let loss = self.calculate_loss(&final_outputs, self.training_labels[i]);
                 total_loss += loss;
 
@@ -263,19 +264,26 @@ impl Model {
         );
 
     }
+fn forward_pass<F, G>(
+    &self,
+    input: &Matrix,
+    hidden_activation: F,
+    output_activation: G,
+) -> (Matrix, Matrix)
+where
+    F: Fn(f64) -> f64,
+    G: Fn(f64) -> f64,
+{
+    // Hidden layer
+    let hidden_inputs = self.input_hidden_weights.dot(input);
+    let hidden_outputs = hidden_inputs.apply(hidden_activation);
 
-    fn forward_pass(&self, input: &Matrix) -> (Matrix, Matrix) {
-        // Hidden layer
-        let hidden_inputs = self.input_hidden_weights.dot(input);
-        let hidden_outputs = hidden_inputs.apply(sigmoid); // Apply sigmoid activation
+    // Output layer
+    let final_inputs = self.hidden_output_weights.dot(&hidden_outputs);
+    let final_outputs = final_inputs.apply(output_activation);
 
-        // Output layer
-        let final_inputs = self.hidden_output_weights.dot(&hidden_outputs);
-        let final_outputs = final_inputs.apply(sigmoid); // Apply sigmoid activation
-
-        (hidden_outputs, final_outputs)
-    }
-
+    (hidden_outputs, final_outputs)
+}
     fn calculate_loss(&self, output: &Matrix, true_label: usize) -> f64 {
         let mut loss = 0.0;
         for i in 0..self.output_nodes {
@@ -288,7 +296,7 @@ impl Model {
 
     fn train_layer(&mut self, input: &Matrix, target: &Matrix) {
         // Forward pass
-        let (hidden_outputs, final_outputs) = self.forward_pass(input);
+        let (hidden_outputs, final_outputs) = self.forward_pass(input, sigmoid, sigmoid);
 
         // Calculate errors
         let output_errors = target - &final_outputs;
@@ -329,14 +337,4 @@ impl Model {
         println!("  Hidden-Output Weights Dimensions: {}x{}", self.hidden_output_weights.rows, self.hidden_output_weights.cols);
         println!("  Data Matrix Dimensions: {}x{}", self.data.rows, self.data.cols);
     }
-}
-
-pub fn sigmoid(x: f64) -> f64 {
-    1.0 / (1.0 + (-x).exp())
-}
-
-#[allow(unused)] 
-pub fn sigmoid_derivative(x: f64) -> f64 {
-    let s = sigmoid(x);
-    s * (1.0 - s)
 }
