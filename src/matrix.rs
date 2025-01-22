@@ -26,11 +26,13 @@ use std::ops::Sub;
 use std::ops::SubAssign;
 use rand_distr::Normal;
 use rand_distr::Distribution;
+
 pub trait Dot<Rhs = Self> {
     type Output;
 
     fn dot(&self, rhs: &Rhs) -> Self::Output;
 }
+
 // define a trait Outer for outer products
 pub trait Outer<Rhs = Self> {
     type Output;
@@ -54,6 +56,7 @@ pub struct Matrix {
     pub data: Vec<f64>, // Flat vector for matrix elements
 }
 
+//IMplementation of a matrix specialized for a neural network
 impl Matrix {
     // Constructor for a new matrix
     pub fn new(rows: usize, cols: usize, data: Vec<f64>) -> Self {
@@ -205,6 +208,7 @@ impl Matrix {
             .expect("Matrix is empty, cannot compute argmax.")
     }
 
+    //apply the funcion to the data
     pub fn apply<F>(&self, func: F) -> Matrix
     where
         F: Fn(f64) -> f64,
@@ -333,7 +337,7 @@ impl Dot for Matrix {
     }
 }
 
-// Implement Outer prduct for matrix
+// Implement Outer product for matrix
 impl Outer for Matrix {
     type Output = Matrix;
 
@@ -361,6 +365,7 @@ impl Outer for Matrix {
         result
     }
 }
+
 // Implement Add for Matrix 
 impl Add for Matrix {
     type Output = Self;
@@ -414,6 +419,7 @@ where
     }
 }
 
+// Sub - returns the difference between 2 matrices
 impl<'a, 'b> Sub<&'b Matrix> for &'a Matrix {
     type Output = Matrix;
 
