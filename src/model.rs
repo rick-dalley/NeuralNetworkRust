@@ -378,5 +378,9 @@ fn forward_pass (
         println!("  Input-Hidden Weights Dimensions: {}x{}", self.input_hidden_weights.rows, self.input_hidden_weights.cols);
         println!("  Hidden-Output Weights Dimensions: {}x{}", self.hidden_output_weights.rows, self.hidden_output_weights.cols);
         println!("  Data Matrix Dimensions: {}x{}", self.data.rows, self.data.cols);
+        println!("  Hidden Layer Activation Function: {}", self.hidden_function);
+        println!("  Output Layer Activation Function: {}", self.output_function);
+        println!("  Data Matrix Dimensions: {}x{}", self.data.rows, self.data.cols);
+
     }
 }

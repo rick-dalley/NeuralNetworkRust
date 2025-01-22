@@ -1,3 +1,5 @@
+use std::fmt;
+
 #[derive(Debug)]
 pub enum ActivationFunction {
     Sigmoid,
@@ -8,6 +10,18 @@ pub enum ActivationFunction {
     Swish,
 }
 
+impl fmt::Display for ActivationFunction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ActivationFunction::Sigmoid => write!(f, "Sigmoid"),
+            ActivationFunction::ReLU => write!(f, "ReLU"),
+            ActivationFunction::LeakyReLU(alpha) => write!(f, "LeakyReLU(α = {:.2})", alpha),
+            ActivationFunction::Tanh => write!(f, "Tanh"),
+            ActivationFunction::Softmax => write!(f, "Softmax"),
+            ActivationFunction::Swish => write!(f, "Swish"),
+        }
+    }
+}
 
 pub fn get_activation_function(name: &str, alpha: Option<f64>) -> ActivationFunction {
     match name.to_lowercase().as_str() {

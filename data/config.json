@@ -4,7 +4,7 @@
   "input_nodes": 784,
   "hidden_nodes": 100,
   "scaling_factor": 255.0,
-  "epochs": 10,
+  "epochs": 5,
   "data_rows": 60000,
   "batch_size": 32,
   "output_classes": 10,
